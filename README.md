@@ -1,6 +1,8 @@
-# SQL-labs
+SQL-labs
 labs on mssql autumn 2018
-######################################
+
+<hr>
+
 Lab2.1  task:
 
 Prerequisites:
@@ -29,7 +31,8 @@ FROM sys.master_files
 WHERE database_id = DB_ID(N'tempdb'); 
 
 Script Lab2.1PS1
-######################################
+
+<hr>
 
 Lab2.2 task:
 
@@ -47,7 +50,7 @@ all scripts start from Student local PC. Check if DBs with such names already ex
 check if everything was succesfull, and create new DBs. NO REMOTE PS SESSIONS or invoke-expressions on remote PC.
 
 Script Lab2.2.ps1
-######################################
+<hr>
 
 Lab2.3 task:
 
