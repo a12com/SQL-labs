@@ -1,5 +1,5 @@
-SQL-labs
-labs on mssql autumn 2018
+SQL-labs<br>
+<i>Labs on mssql autumn 2018</i>
 
 <hr>
 
