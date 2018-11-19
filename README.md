@@ -65,5 +65,43 @@ Save logging of script actions with start and stop time of execution. (Decide wh
 
 Script Lab2.3.ps1
 
+<hr>
+
+Lab3.1 task:
+
+Task 1. Create a PowerShell wrapper for scenario, that should perform next:
+1.	Create a backup for Adventure Work DB,  and restore it on the instance 1.
+2.	Make update of any table with SELECT Before and SELECT after. 
+3.	Create full compressed backup of DB
+4.	Restore it on second Instance.
+5.	Write everything in log file, Log file should be Human readable, with commented steps. (Tee-Object can help)
+
+Script Lab3.1.ps1
 
 
+<hr>
+
+Lab3.2 task:
+
+
+For self studying: “Importing and Exporting Data” in courseware	
+Extra task for lab 3:
+Purpose: Using any code-based option of Data import, Import your custom data in SQL.
+Prerequisites:
+You have a task to gather information about 100+ VMs, that new customer hosts in private datacenter
+VMs is windows based, most of them has no GUI
+You should form a document, that contains next options:
+•	VM host name
+•	VM OS name 
+•	VM OS version
+•	CPU count
+•	Memory count (RAM)
+•	.Net Framework version
+And import this document to SQL data base, there BI team could process it
+Lab task: 
+Create a script witch does all described above, create a file with output, and import it into SQL table, named as host
+For now it is OK to gather data for 1 Host
+Import data tool could be chosen by you, the idea is to do all automatically, not manually
+
+
+Script Lab3.2.ps1
