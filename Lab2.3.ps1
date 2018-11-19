@@ -1,3 +1,15 @@
+<#Using PowerShell, create and run script from local PC, which deploys:
+Data Base “PCDRIVE” (with parameters like HumanResources)
+DB contains tables with results of command: 
+Get-PhysicalDisk | select -Property FriendlyName,BusType,HealthStatus,Size,MediaType 
+
+Data types and names for columns could be selected by yourself 
+Compare pages and files sizes before and after filling data to DB (PS Script should show it in Human readable format).
+Save logging of script actions with start and stop time of execution. (Decide what should be logged – it is your own choice).
+#>
+
+
+
 Import-Module SqlServer
 
 # Create credentials
@@ -10,11 +22,34 @@ $SACred = New-Object -TypeName System.Management.Automation.PSCredential -Argume
 # Create Exitcode function
 function ExitWithCode 
     {
-        param ($exitcode)
+        param ($exitcode, $Err=$Error[0],$Exc,$InnExc)
+        $Exc=$NULL
+        $InnExc=$NULL
+        
+        # Get Current Exception Value
+        If ($Error[0].Exception -ne $NULL)
+            {
+                $Exc=$Err.exception
+                WrtLog -text "$Exc"
+            }
 
+        # Check if there is a more exacting Error code in Inner Exception
+        If ($Err.exception.InnerException -ne $NULL)
+            {
+                $InnExc=$Err.Exception.InnerException
+                WrtLog -text "$InnExc"
+            }
+
+        # If No InnerException or Exception has been identified
+        # Use GetBaseException Method to retrieve object
+        if ($Exc -eq '' -and $InnExc -eq '')
+            {
+                $Exc=$Err.GetBaseException()
+                WrtLog -text "$Exc"
+            }
+        
         $host.SetShouldExit($exitcode)
-        WrtLog -text "$exitcode" 
-        exit 
+        WrtLog -text "Script sent exitcode ($exitcode)" 
     }
 
 # create SQL query function (invoke-sqlcmd)
@@ -28,7 +63,7 @@ Function SqlQry
             }
         Catch
             {
-                ExitWithCode
+                ExitWithCode -exitcode 10
             }
     }
 
@@ -208,10 +243,10 @@ Else
     {
         WrtLog "Error creating table tbl_PhysiscalDisk"
         Write-Error "Error creating table tbl_PhysicalDisk"
-        Exit
+        Exit 12
     }
 
-# insert data into temporary table
+# insert data into table
 
 WrtLog -text "Adding data to tbl_PhysicalDisk..."
 ForEach ($row in $ImportCSV)
@@ -226,14 +261,7 @@ ForEach ($row in $ImportCSV)
                 INSERT INTO tbl_PhysicalDisk (FriendlyName, BusType, HealthStatus, VolSizeGB, MediaType)
                 VALUES('$CsvRecFriendlyName', '$CsvRecBusType', '$CsvRecHealthStatus', '$CsvRecVolSize','$CsvRecMediaType');
 "@
-        try 
-            {
-                SqlQry -Qry $SqlIns
-            }
-        catch 
-            {
-                ExitWithCode
-            }
+        SqlQry -Qry $SqlIns
     }
 WrtLog -text "OK"
 

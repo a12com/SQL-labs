@@ -11,10 +11,34 @@ $SACred = New-Object -TypeName System.Management.Automation.PSCredential -Argume
 
 function ExitWithCode 
     {
-        param ($exitcode)
+        param ($exitcode, $Err=$Error[0],$Exc,$InnExc)
+        $Exc=$NULL
+        $InnExc=$NULL
+        
+        # Get Current Exception Value
+        If ($Error[0].Exception -ne $NULL)
+            {
+                $Exc=$Err.exception
+                WrtLog -text "$Exc"
+            }
 
-        $host.SetShouldExit($exitcode) 
-        exit 
+        # Check if there is a more exacting Error code in Inner Exception
+        If ($Err.exception.InnerException -ne $NULL)
+            {
+                $InnExc=$Err.Exception.InnerException
+                WrtLog -text "$InnExc"
+            }
+
+        # If No InnerException or Exception has been identified
+        # Use GetBaseException Method to retrieve object
+        if ($Exc -eq '' -and $InnExc -eq '')
+            {
+                $Exc=$Err.GetBaseException()
+                WrtLog -text "$Exc"
+            }
+        
+        $host.SetShouldExit($exitcode)
+        WrtLog -text "Script sent exitcode ($exitcode)" 
     }
 
 # Create DBs
@@ -152,7 +176,7 @@ Try
     }
 Catch 
     {
-        ExitWithCode
+        ExitWithCode -exitcode 2
     }
 
 # Get DBs info

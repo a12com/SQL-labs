@@ -1,3 +1,11 @@
+<#Script it using PowerShell:
+Code should be wrapped in PowerShell script, started from student local PC, Password isn’t provided as a plain text, errors capturing is active, code returns DB files locations before execution and after, check the existing files with the same name in the target location, and check free space on disk. To check DB with TSQL:
+SELECT name, physical_name,size,max_size,growth  
+FROM sys.master_files  
+WHERE database_id = DB_ID(N'tempdb'); 
+#>
+
+
 Import-Module SqlServer
 
 # Create credentials
@@ -8,39 +16,63 @@ $SACred = New-Object -TypeName System.Management.Automation.PSCredential -Argume
 $SvrName = "lon-svr1"
 $SysCred = Get-Credential "Adatum\Administrator"
 
-# Create Exitcode function
-
-function ExitWithCode 
-    {
-        param ($exitcode)
-
-        $host.SetShouldExit($exitcode) 
-        exit 
-    }
-
 # Create pssession to work with remote server
 
 $PsOps = New-PSSessionOption -OpenTimeout 30 -CancelTimeout 30 -OperationTimeout 30
 $PSS = New-PSSession -ComputerName $SvrName -Credential $SysCred -SessionOption $PsOps
 
-If ($Pss -eq $null)
+If ($PSS -eq $null)
     {   
         Write-Host "Could not establish connection to $SvrName. Script aborted" -ForegroundColor Yellow
-        ExitWithCode
+        Exit 14
     }
 
-# SQL Query function
+# exitcode function
+function ExitWithCode 
+    {
+        param ($exitcode, $Err=$Error[0],$Exc,$InnExc)
+        $Exc=$NULL
+        $InnExc=$NULL
+        
+        # Get Current Exception Value
+        If ($Error[0].Exception -ne $NULL)
+            {
+                $Exc=$Err.exception
+                WrtLog -text "$Exc"
+            }
+
+        # Check if there is a more exacting Error code in Inner Exception
+        If ($Err.exception.InnerException -ne $NULL)
+            {
+                $InnExc=$Err.Exception.InnerException
+                WrtLog -text "$InnExc"
+            }
+
+        # If No InnerException or Exception has been identified
+        # Use GetBaseException Method to retrieve object
+        if ($Exc -eq '' -and $InnExc -eq '')
+            {
+                $Exc=$Err.GetBaseException()
+                WrtLog -text "$Exc"
+            }
+        
+        $host.SetShouldExit($exitcode)
+        WrtLog -text "Script sent exitcode ($exitcode)" 
+        exit $exitcode
+    }
+    
+# SQL query function (invoke-sqlcmd)
 Function SqlQry 
     {
-        Param([string]$Qry, [string]$ServerInstance=$SvrName, $Credential)
+        Param([string]$Qry, [string]$SvrIns, $Credential=$SACred)
         Try
             {
-                Invoke-SqlCmd -ServerInstance $ServerInstance -Credential $Credential -Query $Qry -QueryTimeout 0
+                Invoke-SqlCmd -ServerInstance $SvrIns -Credential $Credential -Query $Qry -QueryTimeout 0
                 Start-Sleep -Milliseconds 1500
             }
         Catch
             {
-                ExitWithCode
+                ExitWithCode -exitcode 10
             }
     }
 
@@ -49,15 +81,7 @@ Function SqlQry
 
 # get free space info
 
-Try
-    {
-        $FsC = Invoke-Command -Session $PSS -ScriptBlock {get-WmiObject -class win32_logicaldisk -Filter "DeviceID='C:'"}
-    }
-Catch 
-    {
-        Write-Host "Could not get information about disk C space on $SvrName. Script is still running" -ForegroundColor Yellow
-        ExitWithCode 
-    }
+$FsC = Invoke-Command -Session $PSS -ScriptBlock {get-WmiObject -class win32_logicaldisk -Filter "DeviceID='C:'"} -ErrorAction SilentlyContinue
 
 Try
     {
@@ -66,7 +90,7 @@ Try
 Catch 
     {
         Write-Host "Could not get information about disk E space on $SvrName. Script aborted" -ForegroundColor Yellow
-        ExitWithCode
+        ExitWithCode -exitcode 17
     }
 Try
     {
@@ -75,7 +99,7 @@ Try
 Catch 
     {
         Write-Host "Could not get information about disk F space on $SvrName. Script aborted" -ForegroundColor Yellow
-        ExitWithCode 
+        ExitWithCode -exitcode 18
     }
 
 Write-Host "Free Space on Server $SvrName at the moment is:" -ForegroundColor Green
@@ -89,14 +113,14 @@ If ($FsE.FreeSpace -lt 20)
     {
         Write-Host "Disk E has only $([Math]::Round(($FsE.Freespace / 1mb),2)) Mb free. Please free up space and restart" -ForegroundColor Yellow
         Write-Error "Not enough space on disk to continue"
-        Exit
+        Exit 20
     }
 
 If ($fsF.FreeSpace -lt 20) 
     {
         Write-Host "Disk F has only $([Math]::Round(($FsF.Freespace / 1mb),2)) Mb free. Please free up space and restart" -ForegroundColor Yellow
         Write-Error "Not enough space on disk to continue"
-        Exit
+        Exit 21
     }
 
 # Output current file path
@@ -113,20 +137,20 @@ Try
             {        
                 Write-Host 'E:\MSSQL\MSSQLSERVER\templog.ldf already exists. Remove file and then restart!'  -ForegroundColor Yellow
                 Write-Error "E:\MSSQL\MSSQLSERVER\templog.ldf already exists. Remove file and then restart!"
-                Exit
+                Exit 8
             }
         $ChkFileDB = Invoke-Command -Session $PSS -ScriptBlock {Test-Path "F:\MSSQL\MSSQLSERVER\tempdb.mdf"}
         if ($ChkFileDB)
             {
                 Write-Host 'F:\MSSQL\MSSQLSERVER\tempdb.mdf already exists. Remove file and then restart!'  -ForegroundColor Yellow
                 Write-Error "F:\MSSQL\MSSQLSERVER\tempdb.mdf already exists. Remove file and then restart!"
-                Exit
+                Exit 9
             }
     }
 Catch 
     {
         Write-Host "Could not get information about file locations. Script aborted" -ForegroundColor Yellow
-        ExitWithCode
+        ExitWithCode -exitcode 19
     }
 
 # create new folders
@@ -138,7 +162,7 @@ Try
 Catch 
     {
         Write-Host "Could not create E:\MSSSQL\MSSQLSERVER folder on $SvrName. Script aborted" -ForegroundColor Yellow
-        ExitWithCode 
+        ExitWithCode -exitcode 24
     }
 
 Try
@@ -148,7 +172,7 @@ Try
 Catch 
     {
         Write-Host "Could not create F:\MSSSQL\MSSQLSERVER folder on $SvrName. Script aborted" -ForegroundColor Yellow
-        ExitWithCode
+        ExitWithCode -exitcode 25
     }
 
 # change tempdb files size, growth and path
@@ -183,7 +207,7 @@ try
 Catch 
     {
         Write-Host "Error starting SQL enginge service (MSSQLSERVER)"  -ForegroundColor Yellow
-        ExitWithCode
+        ExitWithCode -exitcode 30
     }
 
 # check if server started properly
