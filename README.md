@@ -105,3 +105,19 @@ Import data tool could be chosen by you, the idea is to do all automatically, no
 
 
 Script Lab3.2.ps1
+
+<hr>
+
+Lab 4.1 task:
+
+Make a PowerShell wrapper script to handle Users creation and database encryption (for one instance).
+Read configuration with users from CSV file (columns: Function – DEV, test, service app, service user, backup user; Username – usernames; Password – User Passwords). May use the same config to create users in your AD/Local Computer accounts.  
+
+On first server (as DEV instance):	
+5 developers:	Read and write the database data of User DB. No access to System DBs
+1 application service (non-human user, service account)	Read/write/update data in the table of User DB. No access to System DBs
+1 service account (non-application user, the service account for maintenance)	Modify user DB, create backups, but do not delete DB. Read systems DB.
+1 user, who should make backups	Make backups of all DB, but cannot read data from User DB
+2 QA users	Can only read data from user DB
+
+Script Lab4.1.ps1
