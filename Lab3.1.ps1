@@ -57,15 +57,20 @@ function ExitWithCode
 # SQL query function (invoke-sqlcmd)
 Function SqlQry 
     {
-        Param([string]$Qry, [string]$SvrIns, $Credential=$SACred)
+        Param
+        (
+        [string]$Qry, 
+        [string]$SrvrIns, 
+        $Credential=$SACred
+        )
         Try
             {
-                Invoke-SqlCmd -ServerInstance $SvrIns -Credential $Credential -Query $Qry -QueryTimeout 0 -ErrorAction Stop
-                Start-Sleep -Milliseconds 1500
+            Invoke-SqlCmd -ServerInstance $SrvrIns -Credential $Credential -Query $Qry -QueryTimeout 0 -ErrorAction Stop
+            Start-Sleep -Milliseconds 1500
             }
         Catch
             {
-                ExitWithCode -exitcode 10
+            ExitWithCode -exitcode 10
             }
     }
 
@@ -74,9 +79,9 @@ Function SqlQry
 
 Function WrtLog
     {
-        Param([string]$text, [string]$filepath=$log)
-        Write-Host "$text" -ForegroundColor Green
-        $text | Out-File -FilePath $filepath -Append  
+    Param([string]$text, [string]$filepath=$log)
+    Write-Host "$text" -ForegroundColor Green
+    $text | Out-File -FilePath $filepath -Append  
     }
 
 # Create clear log file

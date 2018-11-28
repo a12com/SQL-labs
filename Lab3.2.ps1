@@ -71,18 +71,23 @@ function ExitWithCode
 
     
 # SQL query function (invoke-sqlcmd)
-Function SqlQry 
+Function Run-Run-SqlQry 
     {
-        Param([string]$Qry, [string]$SvrIns=$SqlSrvr, $Credential=$SACred)
-        Try
-            {
-                Invoke-SqlCmd -ServerInstance $SvrIns -Credential $Credential -Query $Qry -QueryTimeout 0 -ErrorAction Stop
-                Start-Sleep -Milliseconds 1500
-            }
-        Catch
-            {
-                ExitWithCode -exitcode 10
-            }
+    Param
+    (
+    [string]$Query,
+    [string]$SrvrIns=$SqlSrvrConnStr,
+    $Credential=$SqlCred
+    )
+    Try
+        {
+        Invoke-SqlCmd -ServerInstance $SrvrIns -Credential $Credential -Query $Query -QueryTimeout 0
+        Start-Sleep -Milliseconds 1500
+        }
+    Catch
+        {
+        ExitWith-Code -exitCode 10
+        }
     }
 
 
@@ -184,7 +189,7 @@ Try
     } 
 Catch 
     {
-        ExitWithCode -exitcodem 1
+        ExitWithCode -exitcode 1
     }
 
 # reaching servers to get data and than putting it into $SrvrInfo
@@ -203,7 +208,7 @@ Foreach ($Server in $SrvrLst)
                 $VMHostOsVersion = Invoke-Command -Session $PSS -ScriptBlock {(Get-WmiObject -class Win32_OperatingSystem).version}
                 $VMHostCpuCount = Invoke-Command -Session $PSS -ScriptBlock {(Get-WmiObject -Class Win32_Processor).NumberOfCores}
                 $VMHostMemory = [Math]::Round(((Invoke-Command -Session $PSS -ScriptBlock {(Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory}) / 1mb),0)
-                $VMHostNetVer = Invoke-Command -Session $PSS -ScriptBlock ${Function:Get-DotNetFrameworkVersion} | Select-Object -Property Version
+                $VMHostNetVer = Invoke-Command -Session $PSS -ScriptBlock ${Function:Get-DotNetFrameworkVersion} | Select-Object -Property Version | ConvertTo-Csv
                 
             }
             catch 
@@ -211,8 +216,7 @@ Foreach ($Server in $SrvrLst)
                 WrtLog "Could not connect $Server"
                 $VMHostName = "Server unreacheable"
             }
-            $VMHostNetVer = $VMHostNetVer | ConvertTo-Csv # convert dot net result to string format
-            $VMHostNetVer = $VMHostNetVer | ConvertTo-Csv
+
             $CurrSrvr = New-Object PSObject
             $CurrSrvr | Add-Member NoteProperty "Server address" $server
             $CurrSrvr | Add-Member NoteProperty "HostName" $VMHostName
@@ -309,7 +313,7 @@ IF DB_ID (N'HostInfo') IS NOT NULL
 PRINT N'Database HostInfo created successfully'; 
 "@
 
-SqlQry -Qry $query
+Run-SqlQry -Qry $query
 
 # Create table
 
@@ -333,7 +337,7 @@ CREATE TABLE Host
 )
 "@
 
-SqlQry -Qry $query
+Run-SqlQry -Qry $query
 WrtLog -text "Creating table..."
 
 # Check table creation
@@ -346,7 +350,7 @@ IF OBJECT_ID('Host', 'U') IS NOT NULL
     SELECT 1 AS result ELSE SELECT 0 AS result;
 "@
 
-$ChkTblExstnc = SqlQry -Qry $query
+$ChkTblExstnc = Run-SqlQry -Qry $query
 
 If ($ChkTblExstnc.result)
     {
@@ -377,7 +381,7 @@ ForEach ($row in $ImportCSV)
                 INSERT INTO Host ('Server address', 'Host name', 'OS name','OS version', 'CPU count', 'Memory, 'DotNet version')
                 VALUES('$CsvRecSrvr', '$CsvRecHost', '$CsvRecOS', '$CsvRecVer' ,'$CsvRecCpu','$CsvRecMem', '$CsvRecDnet');
 "@
-        SqlQry -Qry $SqlIns
+        Run-SqlQry -Qry $SqlIns
     }
 WrtLog -text "OK"
 
