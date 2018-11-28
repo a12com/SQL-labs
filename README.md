@@ -121,3 +121,27 @@ On first server (as DEV instance):
 2 QA users	Can only read data from user DB
 
 Script Lab4.1.ps1
+
+<hr>
+
+Exittask Lab
+
+Create PS script that:
+* install named instance of MSSQL
+* set up fixed TCP port 1467
+* restore 2 DB's based on AdventureWorks
+* set recovery model simple for 1st and full for 2nd
+* encrypt 1st DB
+* add 3 win users:
+     - 1 for sysadmin server role
+     - 1 for Server Agent with diskadmin server role & db_backupoperator on all DB's
+     - 1 user with db_dataread on user DB's
+* create 
+
+Prerequisites:
+* ready to go configuration file on local computer
+* adventureworks2012 Db files on local computer
+* remote DC server
+* remote server for SQL with disks separate phisical disks E,F,H for data, log and backup files
+
+Script ExitLab.ps1
