@@ -3,6 +3,19 @@ SQL-labs<br>
 
 <hr>
 
+Lab1.1 task:
+
+Create all-in-one PS script, that:
+o	installs Named instance, 
+o	set up firewall rules, that is needed for access to SQL and RDP, 
+o	Script returns name of installed SQL instance, and VM name in human readable view
+o	Script returns list of installed SQL features in any human readable format
+o	Script returns Firewall state and settings, that were changed by Student. 
+
+Script Lab1.1.ps1
+
+<hr>
+
 Lab2.1  task:
 
 Prerequisites:
